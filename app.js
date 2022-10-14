@@ -2,8 +2,12 @@
 
 const rp = require('request-promise');
 const cheerio = require('cheerio');
+const prompt = require("prompt-sync")({ sigint: true });
 const shortageParser = require('./shortageParser');
-const url = 'https://www.ashp.org/drug-shortages/current-shortages/drug-shortages-list?page=All&loginreturnUrl=SSOCheckOnly';
+
+// Asks for input URL and baseURL for completing addresses
+const url = prompt("What URL are you parsing? ");
+const urlBase = prompt("What is the base URL? ");
 
 rp(url)
   .then(function(html){
@@ -20,17 +24,17 @@ rp(url)
     // });
 
     // Finds the first i results, then returns the URL to the shortage page
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 1; i++) {
       shortageList.push($('tr > td > a', html)[i].attribs.href);
     }
     
     // Prints the URLs used in finding the NDCs. For debugging only.
-    console.log("DEBUG - URL(s) used: " + shortageList);
+    console.log("URL(s) used: " + shortageList);
 
     // Sends all URLs through function shortageParser to get NDCs
     return Promise.all (
       shortageList.map(function(url) {
-        return shortageParser('https://www.ashp.org/drug-shortages/current-shortages/' + url);
+        return shortageParser(urlBase + url);
       })
     );
   })
@@ -38,7 +42,9 @@ rp(url)
 /* Returns the array from shortageParser that contains affectedProducts and avalableProducts (NDCs) */
   .then(function(shortages) {
     // console.log(shortages);
-    console.log(JSON.stringify(shortages).replace(/(\\)?"\s*|\s+"/g, ($0, $1) => $1 ? $0 : '"'));  // For outputting JSON
+
+    // For outputting JSON, will also clean up prefix and suffix white spaces
+    console.log(JSON.stringify(shortages).replace(/(\\)?"\s*|\s+"/g, ($0, $1) => $1 ? $0 : '"')); 
   })
 
   .catch(function(err){ 
